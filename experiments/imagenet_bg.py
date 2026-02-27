@@ -26,7 +26,7 @@ class ImageNetBG(torch.utils.data.Dataset):
                         for image_name in os.listdir(class_path):
                             image_path = os.path.join(class_path, image_name)
                             if image_class in syn_to_class:
-                                if not image_name.lower().endswith('.png'):
+                                if not image_name.lower().endswith('.png') and not image_name.lower().endswith('.jpeg'):
                                     continue
                                 
                                 self.samples.append(image_path)
