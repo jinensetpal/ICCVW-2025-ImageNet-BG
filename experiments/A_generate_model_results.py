@@ -10,8 +10,44 @@ from pathlib import Path
 
 from imagenet_bg import ImageNetBG
 
+from src.model.arch import Model
+from src import const
+
 IMAGENET_BG_PATH = '/local/scratch/b/mfdl/datasets/imagenet-bg/images/'
 BATCH_SIZE = 1024
+const.N_CLASSES = 1000
+
+def prepare__ResNet50_CFCE_14x14():
+    const.CAM_SIZE = (14, 14)
+    const.UPSAMPLING_LEVEL = 1
+
+    model = Model(return_logits=True, logits_only=True)
+    model.name = 'imagenet_contrastive_ablated_only_14x14cam_pretrained'
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.eval()
+
+    preprocess = torchvision.models.ResNet50_Weights.IMAGENET1K_V1.transforms()
+
+    model.eval()
+    model.cuda()
+
+    return "ResNet50_CFCE_14x14", model, preprocess
+
+def prepare__ResNet50_CFCE_7x7():
+    const.CAM_SIZE = (7, 7)
+    const.UPSAMPLING_LEVEL = 0
+
+    model = Model(return_logits=True, logits_only=True)
+    model.name = 'imagenet_contrastive_ablated_only_7x7cam_pretrained'
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.eval()
+
+    preprocess = torchvision.models.ResNet50_Weights.IMAGENET1K_V1.transforms()
+
+    model.eval()
+    model.cuda()
+
+    return "ResNet50_CFCE_7x7", model, preprocess
 
 def prepare__ResNet50():
     model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
@@ -21,6 +57,41 @@ def prepare__ResNet50():
     model.cuda()
 
     return "ResNet50", model, preprocess
+
+
+def prepare__ResNet152_CFCE_14x14():
+    const.CAM_SIZE = (14, 14)
+    const.UPSAMPLING_LEVEL = 1
+    const.XL_BACKBONE = True
+
+    model = Model(return_logits=True, logits_only=True)
+    model.name = 'imagenet_contrastive_ablated_only_14x14cam_xlback_pretrained'
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.eval()
+
+    preprocess = torchvision.models.ResNet50_Weights.IMAGENET1K_V1.transforms()
+
+    model.eval()
+    model.cuda()
+
+    return "ResNet152_CFCE_14x14", model, preprocess
+
+def prepare__ResNet152_CFCE_7x7():
+    const.CAM_SIZE = (7, 7)
+    const.UPSAMPLING_LEVEL = 0
+    const.XL_BACKBONE = True
+
+    model = Model(return_logits=True, logits_only=True)
+    model.name = 'imagenet_contrastive_ablated_only_7x7cam_xlback_pretrained'
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.eval()
+
+    preprocess = torchvision.models.ResNet50_Weights.IMAGENET1K_V1.transforms()
+
+    model.eval()
+    model.cuda()
+
+    return "ResNet152_CFCE_7x7", model, preprocess
 
 def prepare__ResNet152():
     model = torchvision.models.resnet152(weights=torchvision.models.ResNet152_Weights.IMAGENET1K_V1)
@@ -55,6 +126,10 @@ def calculate_model_df(model, data_loader):
     return df
 
 model_funs = [
+    prepare__ResNet152_CFCE_14x14,
+    prepare__ResNet50_CFCE_14x14,
+    prepare__ResNet152_CFCE_7x7,
+    prepare__ResNet50_CFCE_7x7,
     prepare__ResNet152,
     prepare__ResNet50,
 ]
@@ -72,7 +147,7 @@ for model_fun in model_funs:
         labels_file='./imagenet_class_index.json',
         transform=preprocess
     )
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=16)
 
     df = calculate_model_df(model, data_loader)
     df.to_pickle(f"./model_results/{model_name}.pickle")
