@@ -25,17 +25,25 @@ df = pd.concat(dfs, ignore_index=True)
 def calculate_accuracy(group):
     return (group['label'] == group['prediction']).sum() / group.shape[0]
 
-grouped = df.groupby(['quality', 'type', 'background_real_type', 'background', 'label', 'model'])
+grouped = df.groupby(['quality', 'type', 'background_real_type', 'background', 'model'])
 df = grouped.apply(calculate_accuracy).reset_index(name='accuracy')
 
 df['quality'] = df['quality'].replace({'bad': 'N/A', 'questionable': '*', 'ok': '**', 'good': '***', 'v_good': '****'})
 df['background_real_type'] = df['background_real_type'].replace({'ah': 'approach_1', 'gah': 'approach_2', 'sau': 'approach_3'})
 
 model_order = [
-    'ResNet152_CFCE_14x14',
-    'ResNet50_CFCE_14x14',
-    'ResNet152_CFCE_7x7',
-    'ResNet50_CFCE_7x7',
+    'ResNet152_CFCE_14x14_1',
+    'ResNet152_CFCE_14x14_2',
+    'ResNet152_CFCE_14x14_3',
+    'ResNet50_CFCE_14x14_1',
+    'ResNet50_CFCE_14x14_2',
+    'ResNet50_CFCE_14x14_3',
+    'ResNet152_CFCE_7x7_1',
+    'ResNet152_CFCE_7x7_2',
+    'ResNet152_CFCE_7x7_3',
+    'ResNet50_CFCE_7x7_1',
+    'ResNet50_CFCE_7x7_2',
+    'ResNet50_CFCE_7x7_3',
     'ResNet152',
     'ResNet50',
 ]
@@ -51,7 +59,7 @@ def calculate_model_performance(df):
         print("\n> {:<20s} |".format(model), end=' ')
         for type in ['unaltered', 'abstract', 'real']:
             if type in mean_accuracy[model]:
-                print("{}: {:.01f} ∆ {:+.01f}  \t".format(type, mean_accuracy[model].loc[type]*100, delta_accuracy[model].loc[type]*100), end=' ')
+                print("{}: {:f} ∆ {:+.01f}  \t".format(type, mean_accuracy[model].loc[type], delta_accuracy[model].loc[type]*100), end=' ')
 
 
 calculate_model_performance(df[df['quality'].isin(['***', '****'])])
@@ -101,11 +109,6 @@ def get_extreme_classes(df):
     print_labels(sorted_labels[-10:], title="Classes with improvement:")     
     print("\n\n -----")
        
-
-df_modern_models = df[df["model"].isin(['EfficientNet_B3', 'ConvNeXt_L', 'EfficientNet_V2_M','ViT_L_16', 'MaxVit_T', 'Swin_V2_B'])]
-
-
-get_extreme_classes(df_modern_models)
 #get_extreme_classes(df)
 #get_extreme_classes(df_modern_models[df_modern_models['quality'] == '****'])
 #get_extreme_classes(df_modern_models[df_modern_models['quality'] == '***'])
