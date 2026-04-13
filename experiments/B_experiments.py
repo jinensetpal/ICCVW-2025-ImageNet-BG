@@ -32,20 +32,23 @@ df['quality'] = df['quality'].replace({'bad': 'N/A', 'questionable': '*', 'ok': 
 df['background_real_type'] = df['background_real_type'].replace({'ah': 'approach_1', 'gah': 'approach_2', 'sau': 'approach_3'})
 
 model_order = [
-    'ResNet152_CFCE_14x14_1',
-    'ResNet152_CFCE_14x14_2',
-    'ResNet152_CFCE_14x14_3',
-    'ResNet50_CFCE_14x14_1',
-    'ResNet50_CFCE_14x14_2',
-    'ResNet50_CFCE_14x14_3',
+    'ResNet152',
     'ResNet152_CFCE_7x7_1',
     'ResNet152_CFCE_7x7_2',
     'ResNet152_CFCE_7x7_3',
+    'ResNet152_CFCE_14x14_1',
+    'ResNet152_CFCE_14x14_2',
+    'ResNet152_CFCE_14x14_3',
+    'ResNet50',
     'ResNet50_CFCE_7x7_1',
     'ResNet50_CFCE_7x7_2',
     'ResNet50_CFCE_7x7_3',
-    'ResNet152',
-    'ResNet50',
+    'ResNet50_CFCE_14x14_1',
+    'ResNet50_CFCE_14x14_2',
+    'ResNet50_CFCE_14x14_3',
+    'ResNet50_ABN_14x14_1',
+    'ResNet50_GALS_14x14_1',
+    'ResNet50_GALS_7x7_1',
 ]
 
 
