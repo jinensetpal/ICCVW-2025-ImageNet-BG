@@ -41,7 +41,7 @@ def prepare__ResNet152_CFCE(cam_size=7, run_idx=1):
 
     model = Model(return_logits=True, logits_only=True)
     model.name = f'imagenet_contrastive_ablated_only_{cam_size}x{cam_size}cam_xlback_pretrained{run_suffix}'
-    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/best.pt', map_location=model.device, weights_only=True))
     model.backbone.layer4[-1].relu.register_forward_hook(hook)
 
     model.eval()
@@ -84,7 +84,7 @@ def prepare__ResNet50_CFCE(cam_size=7, run_idx=1):
 
     model = Model(return_logits=True, logits_only=True)
     model.name = f'imagenet_contrastive_ablated_only_{cam_size}x{cam_size}cam_pretrained{run_suffix}'
-    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/cfce_best.pt', map_location=model.device, weights_only=True))
+    model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/best.pt', map_location=model.device, weights_only=True))
     model.backbone.layer4[-1].relu.register_forward_hook(hook)
 
     model.eval()
@@ -92,25 +92,36 @@ def prepare__ResNet50_CFCE(cam_size=7, run_idx=1):
 
     return f"ResNet50_CFCE_{cam_size}x{cam_size}_{run_idx}", model, transforms
 
-def prepare__ResNet50():
-    model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
-    preprocess = torchvision.models.ResNet50_Weights.IMAGENET1K_V1.transforms()
-    model.layer4[-1].relu.register_forward_hook(hook)
+def prepare__ResNet50(cam_size=7, run_idx=1):
+    const.XL_BACKBONE = False
+    const.CAM_SIZE = (cam_size, cam_size)
+    const.UPSAMPLING_LEVEL = 1 if cam_size == 14 else 0
+    run_suffix = '' if run_idx == 1 else str(run_idx)
+
+    if cam_size == 14:
+        model = Model(return_logits=True, logits_only=True)
+        model.name = f'imagenet_default_{cam_size}x{cam_size}cam_pretrained{run_suffix}'
+        model.load_state_dict(torch.load(const.DOWNSTREAM_MODELS_DIR / f'{model.name}/best.pt', map_location=model.device, weights_only=True))
+        model.backbone.layer4[-1].relu.register_forward_hook(hook)
+    else:
+        model = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
+        preprocess = torchvision.models.ResNet50_Weights.DEFAULT.transforms()
+        model.layer4[-1].relu.register_forward_hook(hook)
 
     model.eval()
     model.cuda()
 
-    return "ResNet50", model, preprocess
+    return f"ResNet50_{cam_size}x{cam_size}_{run_idx}", model, transforms
 
 def prepare__ResNet152():
-    model = torchvision.models.resnet152(weights=torchvision.models.ResNet152_Weights.IMAGENET1K_V1)
-    preprocess = torchvision.models.ResNet152_Weights.IMAGENET1K_V1.transforms()
+    model = torchvision.models.resnet152(weights=torchvision.models.ResNet152_Weights.DEFAULT)
+    preprocess = torchvision.models.ResNet152_Weights.DEFAULT.transforms()
     model.layer4[-1].relu.register_forward_hook(hook)
 
     model.eval()
     model.cuda()
 
-    return "ResNet152", model, preprocess
+    return "ResNet152", model, transforms
 
 def calculate_model_df(model, data_loader):
     all_out = []
@@ -137,23 +148,24 @@ def calculate_model_df(model, data_loader):
 
 if __name__ == '__main__':
     model_funs = [
-        partial(prepare__ResNet152_CFCE, cam_size=14, run_idx=3),
-        partial(prepare__ResNet152_CFCE, cam_size=7, run_idx=3),
-        partial(prepare__ResNet50_CFCE, cam_size=14, run_idx=3),
-        partial(prepare__ResNet50_CFCE, cam_size=7, run_idx=3),
-        partial(prepare__ResNet152_CFCE, cam_size=14, run_idx=2),
-        partial(prepare__ResNet152_CFCE, cam_size=7, run_idx=2),
-        partial(prepare__ResNet50_CFCE, cam_size=14, run_idx=2),
-        partial(prepare__ResNet50_CFCE, cam_size=7, run_idx=2),
-        partial(prepare__ResNet152_CFCE, cam_size=14, run_idx=1),
-        partial(prepare__ResNet152_CFCE, cam_size=7, run_idx=1),
+        partial(prepare__ResNet50, cam_size=14, run_idx=1),
+        partial(prepare__ResNet50, cam_size=14, run_idx=2),
+        partial(prepare__ResNet50, cam_size=14, run_idx=3),
+        partial(prepare__ResNet50, cam_size=7, run_idx=1),
         partial(prepare__ResNet50_CFCE, cam_size=14, run_idx=1),
+        partial(prepare__ResNet50_CFCE, cam_size=14, run_idx=2),
+        partial(prepare__ResNet50_CFCE, cam_size=14, run_idx=3),
         partial(prepare__ResNet50_CFCE, cam_size=7, run_idx=1),
-        partial(prepare__ResNet50_GALS, ckpt='~/feature-alignment/GALS/wandb/imagenet/wandb/run-20260402_135435-imagenet_gals_14x14_trial_0/files/best_valacc_0.77_epoch_6.ckpt', cam_size=14, run_idx=1),
-        partial(prepare__ResNet50_GALS, ckpt='~/feature-alignment/GALS/wandb/imagenet/wandb/run-20260402_135449-imagenet_gals_7x7_trial_0/files/best_valacc_0.76_epoch_1.ckpt', cam_size=7, run_idx=1),
-        partial(prepare__ResNet50_ABN, ckpt='~/feature-alignment/GALS/wandb/imagenet/wandb/run-20260402_135522-imagenet_abn_14x14_trial_0/files/best_valacc_0.77_epoch_1.ckpt', run_idx=1),
-        prepare__ResNet152,
-        prepare__ResNet50,
+        partial(prepare__ResNet50_CFCE, cam_size=7, run_idx=2),
+        partial(prepare__ResNet50_CFCE, cam_size=7, run_idx=3),
+        partial(prepare__ResNet50_ABN, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260413_082437-imagenet_abn_14x14_2/files/best_valacc_0.77_epoch_1.ckpt', run_idx=2),
+        partial(prepare__ResNet50_ABN, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260413_183334-imagenet_abn_14x14_3/files/best_valacc_0.77_epoch_1.ckpt', run_idx=3),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260402_135435-imagenet_gals_14x14_trial_0/files/best_valacc_0.77_epoch_6.ckpt', cam_size=14, run_idx=1),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260412_192926-imagenet_gals_14x14_2/files/best_valacc_0.77_epoch_6.ckpt', cam_size=14, run_idx=2),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260413_150021-imagenet_gals_14x14_3/files/best_valacc_0.77_epoch_6.ckpt', cam_size=14, run_idx=3),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260402_135449-imagenet_gals_7x7_trial_0/files/best_valacc_0.76_epoch_1.ckpt', cam_size=7, run_idx=1),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260413_001014-imagenet_gals_7x7_2/files/best_valacc_0.76_epoch_7.ckpt', cam_size=7, run_idx=2),
+        partial(prepare__ResNet50_GALS, ckpt='/local/scratch/a/jsetpal/feature-alignment/GALS/wandb/imagenet/wandb/run-20260413_150036-imagenet_gals_7x7_3/files/best_valacc_0.76_epoch_7.ckpt', cam_size=7, run_idx=3),
     ]
 
     Path("./model_results").mkdir(parents=True, exist_ok=True)

@@ -16,14 +16,13 @@ class ImageNetBG(torch.utils.data.Dataset):
             self.mask_transform = T.Compose([T.PILToTensor(),
                 T.Resize(size=[232, 232], antialias=True),
                 T.CenterCrop(size=(224, 224))])
-            #self.mask_transform = T.Compose(transform.transforms[:-1])  # everything but ImageNet normlization
 
         with open(labels_file, "r") as f:
             label_mappings = json.load(f)
             
         #quality > type > background
         syn_to_class = {v[0]: k for k, v in label_mappings.items()}
-        for quality in ['good', 'ok', 'v_good'] if return_masks else ['bad', 'good', 'ok', 'questionable', 'v_good']:
+        for quality in ['good', 'v_good'] if return_masks else ['bad', 'good', 'ok', 'questionable', 'v_good']:
             quality_path = os.path.join(self.root_dir, quality)
             for type in os.listdir(quality_path):
                 type_path = os.path.join(quality_path, type)            
@@ -36,7 +35,7 @@ class ImageNetBG(torch.utils.data.Dataset):
                             if image_class in syn_to_class:
                                 if not image_name.lower().endswith('.png') and not image_name.lower().endswith('.jpeg'):
                                     continue
-                                
+
                                 self.samples.append(image_path)
                                 self.targets.append(int(syn_to_class[image_class]))
 
@@ -63,6 +62,6 @@ class ImageNetBG(torch.utils.data.Dataset):
 
         if self.return_masks:
             mask_path = os.path.join('/local/scratch/b/mfdl/datasets/imagenet-s/validation-segmentation/', *img_path.split('/')[-2:]).replace('JPEG', 'png')
-            mask = self.mask_transform(Image.open(mask_path).convert('L')) != 0
+            mask = self.mask_transform(Image.open(mask_path))[0] != 0
             return image, (mask, target)
         return image, target, info
